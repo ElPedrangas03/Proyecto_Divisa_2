@@ -11,6 +11,7 @@ data class Divisa(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val date: String = formatDate(System.currentTimeMillis()),
+    val change: String,
     val currency: String,
     val rate: Double
 )

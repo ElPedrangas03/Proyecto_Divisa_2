@@ -15,7 +15,7 @@ class DivisasProvider : ContentProvider() {
 
     private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
         addURI(DivisasContract.AUTHORITY, DivisasContract.PATH_DIVISAS, CODE_DIVISAS)
-        addURI(DivisasContract.AUTHORITY, "${DivisasContract.PATH_DIVISAS_BY_CURRENCY_AND_DATE}/*/*/*", CODE_DIVISAS_BY_CURRENCY_AND_DATE)
+        addURI(DivisasContract.AUTHORITY, "${DivisasContract.PATH_DIVISAS_BY_CURRENCY_AND_CHANGE_AND_DATE}/*/*/*/*", CODE_DIVISAS_BY_CURRENCY_AND_DATE)
     }
 
     companion object {
@@ -48,13 +48,14 @@ class DivisasProvider : ContentProvider() {
             CODE_DIVISAS_BY_CURRENCY_AND_DATE -> {
                 // Consulta con parámetros (moneda y rango de fechas)
                 val currency = uri.pathSegments[1] // Moneda (ej. "USD")
-                val startDate = uri.pathSegments[2] // Fecha inicial (ej. "2023-10-25")
-                val endDate = uri.pathSegments[3] // Fecha final (ej. "2023-10-26")
+                val change = uri.pathSegments[2] // Cambio de moneda
+                val startDate = uri.pathSegments[3] // Fecha inicial (ej. "2023-10-25")
+                val endDate = uri.pathSegments[4] // Fecha final (ej. "2023-10-26")
 
-                Log.d("DivisasProvider", "Consultando divisas para $currency entre $startDate y $endDate")
+                Log.d("DivisasProvider", "Consultando divisas para $currency con cambio en $change entre $startDate y $endDate")
 
                 // Realiza la consulta con parámetros
-                val cursor = divisasDao.getExchangeRatesByCurrencyAndDateRange(currency, startDate, endDate)
+                val cursor = divisasDao.getExchangeRatesByCurrencyAndDateRange(currency, change, startDate, endDate)
                 cursor.setNotificationUri(context?.contentResolver, uri)
                 cursor
             }

@@ -1,10 +1,9 @@
-package com.example.proyectodivisa
+package com.example.proyectodivisa.workmanager
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
-import retrofit2.http.Query
 
 // Data class para la respuesta de la API
 data class ExchangeRatesResponse(

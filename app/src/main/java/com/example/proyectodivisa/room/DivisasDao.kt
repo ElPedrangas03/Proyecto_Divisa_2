@@ -28,6 +28,6 @@ interface DivisasDao {
     }
 
     // Método para obtener divisas por moneda y rango de fechas
-    @Query("SELECT * FROM Divisas WHERE currency = :currency AND date BETWEEN :startDate AND :endDate")
-    fun getExchangeRatesByCurrencyAndDateRange(currency: String, startDate: String, endDate: String): Cursor
+    @Query("SELECT * FROM Divisas WHERE currency = :currency AND change = :change AND date BETWEEN :startDate AND :endDate")
+    fun getExchangeRatesByCurrencyAndDateRange(currency: String, change: String, startDate: String, endDate: String): Cursor
 }

@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.proyectodivisa.model.Divisa
 
-@Database(entities = [Divisa::class], version = 2, exportSchema = false)
+@Database(entities = [Divisa::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun exchangeRateDao(): DivisasDao
@@ -21,7 +21,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "DivisasDB"
-                )//.fallbackToDestructiveMigration()    <-- Borra los datos anteriores permitiendo cambios
+                )//.fallbackToDestructiveMigration()    //<-- Borra los datos anteriores permitiendo cambios
                     .build()
                 INSTANCE = instance
                 instance
