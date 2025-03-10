@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity(), OnChartValueSelectedListener {
         lineChart.setOnChartValueSelectedListener(this)
 
         // Obtén los datos del ViewModel
-        viewModel.fetchExchangeRates("MXN", "USD", "2025-03-01", "2025-03-02")
+        viewModel.fetchExchangeRates("MXN", "USD", "2025-03-01", "2025-03-20")
 
         // Observa los cambios en los datos
         viewModel.exchangeRates.observe(this, { exchangeRates ->

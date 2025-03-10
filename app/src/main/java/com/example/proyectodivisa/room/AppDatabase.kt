@@ -21,7 +21,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "DivisasDB"
-                )//.fallbackToDestructiveMigration()    //<-- Borra los datos anteriores permitiendo cambios
+                ).fallbackToDestructiveMigration()    //<-- Borra los datos anteriores permitiendo cambios
                     .build()
                 INSTANCE = instance
                 instance
