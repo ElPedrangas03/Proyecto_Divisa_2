@@ -11,15 +11,5 @@ import kotlinx.coroutines.launch
 
 class DivisasViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = DivisasRepository(application)
 
-    private val _exchangeRates = MutableLiveData<List<ExchangeRate>>()
-    val exchangeRates: LiveData<List<ExchangeRate>> get() = _exchangeRates
-
-    fun fetchExchangeRates(currency: String, change: String, startDate: String, endDate: String) {
-        viewModelScope.launch {
-            val rates = repository.fetchExchangeRates(currency, change, startDate, endDate)
-            _exchangeRates.value = rates
-        }
-    }
 }

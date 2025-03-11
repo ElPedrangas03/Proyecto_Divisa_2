@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <permission
-        android:name="com.example.proyectodivisa.provider.ACCESS_DIVISAS"
-        android:protectionLevel="normal" />
+        android:name="com.example.proyectodivisacontent.provider.ACCESS_DIVISAS"
+        android:protectionLevel="signature" />
 
     <application
         android:allowBackup="true"
@@ -29,9 +29,9 @@
         </activity>
         <provider
             android:name=".provider.DivisasProvider"
-            android:authorities="com.example.proyectodivisa.provider"
+            android:authorities="com.example.proyectodivisacontent.provider"
             android:exported="true"
-            android:permission="com.example.proyectodivisa.provider.ACCESS_DIVISAS" />
+            android:permission="com.example.proyectodivisacontent.permission.ACCESS_DIVISA"/>
     </application>
 
 </manifest>

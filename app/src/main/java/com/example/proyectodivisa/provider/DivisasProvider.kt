@@ -2,26 +2,20 @@ package com.example.proyectodivisa.provider
 
 import android.content.ContentProvider
 import android.content.ContentValues
-import android.content.UriMatcher
+import android.content.pm.PackageManager
 import android.database.Cursor
+import android.database.MatrixCursor
 import android.net.Uri
 import android.util.Log
 import com.example.proyectodivisa.room.AppDatabase
 import com.example.proyectodivisa.room.DivisasDao
+import com.example.proyectodivisa.provider.Converters
+import java.text.SimpleDateFormat
+import java.util.*
 
 class DivisasProvider : ContentProvider() {
 
     private lateinit var divisasDao: DivisasDao
-
-    private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
-        addURI(DivisasContract.AUTHORITY, DivisasContract.PATH_DIVISAS, CODE_DIVISAS)
-        addURI(DivisasContract.AUTHORITY, "${DivisasContract.PATH_DIVISAS_BY_CURRENCY_AND_CHANGE_AND_DATE}/*/*/*/*", CODE_DIVISAS_BY_CURRENCY_AND_DATE)
-    }
-
-    companion object {
-        private const val CODE_DIVISAS = 100 // Código para identificar la tabla de divisas
-        private const val CODE_DIVISAS_BY_CURRENCY_AND_DATE = 101 // Código para consultas con parámetros
-    }
 
     override fun onCreate(): Boolean {
         // Inicializa la base de datos y el DAO
@@ -37,30 +31,84 @@ class DivisasProvider : ContentProvider() {
         selectionArgs: Array<String>?,
         sortOrder: String?
     ): Cursor? {
-        return when (uriMatcher.match(uri)) {
-            CODE_DIVISAS -> {
-                // Consulta general (sin parámetros)
-                Log.d("DivisasProvider", "Consultando la tabla de divisas")
-                val cursor = divisasDao.getExchangeRatesCursor()
-                cursor.setNotificationUri(context?.contentResolver, uri)
-                cursor
-            }
-            CODE_DIVISAS_BY_CURRENCY_AND_DATE -> {
-                // Consulta con parámetros (moneda y rango de fechas)
-                val currency = uri.pathSegments[1] // Moneda (ej. "USD")
-                val change = uri.pathSegments[2] // Cambio de moneda
-                val startDate = uri.pathSegments[3] // Fecha inicial (ej. "2023-10-25")
-                val endDate = uri.pathSegments[4] // Fecha final (ej. "2023-10-26")
-
-                Log.d("DivisasProvider", "Consultando divisas para $currency con cambio en $change entre $startDate y $endDate")
-
-                // Realiza la consulta con parámetros
-                val cursor = divisasDao.getExchangeRatesByCurrencyAndDateRange(currency, change, startDate, endDate)
-                cursor.setNotificationUri(context?.contentResolver, uri)
-                cursor
-            }
-            else -> throw IllegalArgumentException("URI desconocida: $uri")
+        // Verifica que la aplicación que hace la consulta tenga el permiso necesario
+        val requiredPermission = "com.example.proyectodivisacontent.permission.ACCESS_DIVISA"
+        if (context?.checkCallingOrSelfPermission(requiredPermission) != PackageManager.PERMISSION_GRANTED) {
+            throw SecurityException("Se requiere el permiso $requiredPermission para acceder a este ContentProvider.")
         }
+
+        // Extrae los parámetros enviados en la consulta (la moneda y el rango de fechas)
+        val currency = uri.getQueryParameter("currency") // Moneda solicitada (ejemplo: "USD")
+        val startDateStr = uri.getQueryParameter("startDate") // Fecha de inicio del rango
+        val endDateStr = uri.getQueryParameter("endDate") // Fecha de fin del rango
+
+        // Si falta algún parámetro, se muestra un error y se detiene la consulta (para debug)
+        if (currency.isNullOrEmpty() || startDateStr.isNullOrEmpty() || endDateStr.isNullOrEmpty()) {
+            Log.e("DivisasProvider", "Faltan parámetros: currency, startDate o endDate.")
+            return null
+        }
+
+        // Convertir las fechas recibidas (en formato String) a objetos Date
+        val dateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z", Locale.US)
+        val startDate: Date
+        val endDate: Date
+        try {
+            startDate = dateFormat.parse(startDateStr) ?: return null
+            endDate = dateFormat.parse(endDateStr) ?: return null
+        } catch (e: Exception) {
+            Log.e("DivisasProvider", "Error al parsear fechas: ${e.localizedMessage}")
+            return null
+        }
+
+        // Obtener todos los registros de la base de datos
+        val rawCursor = divisasDao.getExchangeRatesCursor()
+
+        // Cursor para devolver los resultados filtrados
+        val matrixCursor = MatrixCursor(
+            arrayOf(
+                DivisasContract.COLUMN_ID, // ID del registro
+                DivisasContract.COLUMN_TIME_LAST_UPDATE, // Fecha de la actualización
+                DivisasContract.COLUMN_EXCHANGE_RATE // Valor de la tasa de cambio
+            )
+        )
+
+        // Recorrer todos los registros obtenidos de la base de datos y filtrarlos
+        rawCursor?.use { cursor ->
+            // Índices de columnas
+            val colId = cursor.getColumnIndexOrThrow("id")
+            val colTimeUpdate = cursor.getColumnIndexOrThrow("date")
+            val colRates = cursor.getColumnIndexOrThrow("rate")
+
+            while (cursor.moveToNext()) {
+                val id = cursor.getInt(colId)
+                val timeLastUpdateStr = cursor.getString(colTimeUpdate) // Fecha de actualización (String)
+                val ratesJson = cursor.getString(colRates) // JSON con las tasas de cambio
+
+                // Convertir la fecha obtenida de la BD a un objeto Date
+                val recordDate = try {
+                    dateFormat.parse(timeLastUpdateStr)
+                } catch (e: Exception) {
+                    null
+                }
+
+                if (recordDate != null) {
+                    // Verificar si la fecha está dentro del rango solicitado por el usuario
+                    if (!recordDate.before(startDate) && !recordDate.after(endDate)) {
+
+                        // Convertir los valores JSON en un mapa de tasas de cambio
+                        val rateMap = Converters().toRatesMap(ratesJson)
+                        val exchangeRate = rateMap[currency] // Obtener la tasa de cambio solicitada
+
+                        // Si la tasa de cambio existe, se agrega al cursor
+                        if (exchangeRate != null) {
+                            matrixCursor.addRow(arrayOf(id, timeLastUpdateStr, exchangeRate))
+                        }
+                    }
+                }
+            }
+        }
+        // Se devuelven los datos filtrados en el cursor
+        return matrixCursor
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
@@ -81,9 +129,6 @@ class DivisasProvider : ContentProvider() {
     }
 
     override fun getType(uri: Uri): String? {
-        return when (uriMatcher.match(uri)) {
-            CODE_DIVISAS -> "vnd.android.cursor.dir/vnd.com.example.proyectodivisa.divisas"
-            else -> throw IllegalArgumentException("URI desconocida: $uri")
-        }
+        return "vnd.android.cursor.dir/vnd.${DivisasContract.AUTHORITY}.exchange_rates"
     }
 }
