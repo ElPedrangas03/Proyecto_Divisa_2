@@ -20,7 +20,7 @@ interface ExchangeRateApiService {
 
 // Objeto singleton para Retrofit
 object RetrofitClient {
-    private const val BASE_URL = "https://v6.exchangerate-api.com/v6/bf27be13817027736e76efb7/" // Reemplaza YOUR_API_KEY
+    private const val BASE_URL = "https://v6.exchangerate-api.com/v6/de5d2512cfe83eaa363bb556/" // Reemplaza YOUR_API_KEY
 
     val instance: ExchangeRateApiService by lazy {
         Retrofit.Builder()

@@ -15,7 +15,7 @@ class MyWorker(appContext: Context, workerParams: WorkerParameters) :
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         return@withContext try {
             // Obtén los datos de la API con MXN como moneda base
-            val response = RetrofitClient.instance.getLatestRates("USD")
+            val response = RetrofitClient.instance.getLatestRates("MXN")
 
             // Verifica si la respuesta fue exitosa
             if (response.result == "success") {
@@ -28,7 +28,7 @@ class MyWorker(appContext: Context, workerParams: WorkerParameters) :
                 // Guarda los datos en la base de datos
                 val exchangeRates = response.conversion_rates.map { (currency, rate) ->
                     // CAMBIAR AQUI SEGUN LA MONEDA QUE ESTEMOS USANDO
-                    Divisa(change = "USD", currency = currency, rate = rate)
+                    Divisa(change = "MXN", currency = currency, rate = rate)
                 }
                 val database = AppDatabase.getDatabase(applicationContext)
                 database.exchangeRateDao().insertAll(exchangeRates)
